@@ -23,7 +23,12 @@ func ScanBucket(bucket string, extendedOutput bool) {
 
 	log.Infof("BUCKET: %s\n", bucket)
 
-	// aws s3 ls s3://{BUCKET_NAME} --no-sign-request
+	listBucketPermissions(s3Client, ctx, bucket)
+	checkBucketACL(s3Client, ctx, bucket, extendedOutput)
+}
+
+// aws s3 ls s3://{BUCKET_NAME} --no-sign-request
+func listBucketPermissions(s3Client *s3.Client, ctx context.Context, bucket string) {
 	log.Info("testing list permissions on bucket")
 	objects, err := awsv.ListObjects(s3Client, ctx, bucket)
 	if err != nil {
@@ -31,20 +36,20 @@ func ScanBucket(bucket string, extendedOutput bool) {
 	} else {
 		log.Infof("!!! S3 bucket is publicly accessible, found %d objects\n", len(objects))
 	}
+}
 
-	// aws s3api get-bucket-acl --bucket {BUCKET_NAME} --no-sign-request
+// aws s3api get-bucket-acl --bucket {BUCKET_NAME} --no-sign-request
+func checkBucketACL(s3Client *s3.Client, ctx context.Context, bucket string, extendedOutput bool) {
 	log.Info("testing bucket ACL")
 	res, err := awsv.BucketAcl(s3Client, ctx, bucket)
 	if err != nil {
 		log.Errorf("unable to get ACL for bucket %s: %s", bucket, err)
 	} else {
 		log.Info("!!! S3 bucket has public ACL\n")
-		// Print each grant only on extended output
 		if extendedOutput {
 			printACLGrants(res)
 		}
 	}
-
 }
 
 func printACLGrants(res *s3.GetBucketAclOutput) {
